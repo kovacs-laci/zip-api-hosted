@@ -7,6 +7,11 @@
 .phpunit.result.cache
 /.codex
 /.cursor/
+/.claude/
+/.mcp.json
+/.npmrc
+AGENTS.md
+CLAUDE.md
 /.idea
 /.nova
 /.phpunit.cache
