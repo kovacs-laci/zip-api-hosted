@@ -1,0 +1,77 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use App\Models\County;
+
+class CountySeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     */
+    public function run()
+    {
+        // Construct the expected data file path and support both .txt and .csv.
+        $filePath = str_replace('/', DIRECTORY_SEPARATOR, database_path('seeders/data/counties.txt'));
+        if (!File::exists($filePath)) {
+            $filePath = str_replace('/', DIRECTORY_SEPARATOR, database_path('seeders/data/counties.csv'));
+            if (!File::exists($filePath)) {
+                $this->command->warn("❗ Data source file not found: $filePath");
+                return;
+            }
+        }
+        $this->command->info("Using $filePath for data import.");
+
+        // Read all lines from the file using Laravel's File class.
+        $lines = File::lines($filePath)->toArray();
+        if (count($lines) <= 1) { // Only header row exists.
+            $this->command->warn("❗ No data to seed.");
+            return;
+        }
+
+        // Remove the header row.
+        array_shift($lines);
+
+        // Batch insertion.
+        $batchSize = 100;
+
+        $rowsBatch = [];
+
+        // Use the generated column array placeholder.
+        $columns = ['name'];
+
+        $output = $this->command->getOutput();
+        $progressBar = $output->createProgressBar(count($lines));
+        $progressBar->start();
+
+        foreach ($lines as $line) {
+            // Parse the CSV line.
+            $csv = str_getcsv($line);
+            // Skip empty rows.
+            if (empty(array_filter($csv))) {
+                continue;
+            }
+            $rowData = [];
+            foreach ($columns as $index => $column) {
+                $rowData[$column] = $csv[$index] ?? null;
+            }
+            $rowsBatch[] = $rowData;
+            if (count($rowsBatch) >= $batchSize) {
+                DB::table('counties')->insert($rowsBatch);
+                $rowsBatch = [];
+            }
+             $progressBar->advance();
+        }
+        // Insert any remaining rows.
+        if (count($rowsBatch) > 0) {
+            DB::table('counties')->insert($rowsBatch);
+        }
+        $progressBar->finish();
+        $this->command->info("\n✅ Seeding completed successfully!");
+    }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "zip-api",
+  "version": "1.0.0",
+  "description": "API for Hungarian counties, cities, and postcodes.",
+  "title": "ZIP API Documentation",
+  "order": [
+    "Counties",
+    "Cities",
+    "Postcodes"
+  ]
+}
