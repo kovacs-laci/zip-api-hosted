@@ -11,6 +11,6 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
-require base_path('routes\api\postcodes.php');
-require base_path('routes\api\cities.php');
-require base_path('routes\api\counties.php');
+require base_path('routes/api/postcodes.php');
+require base_path('routes/api/cities.php');
+require base_path('routes/api/counties.php');
