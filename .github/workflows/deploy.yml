@@ -46,23 +46,12 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.5'
-          coverage: none
-
-      - name: Install production dependencies
-        run: composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
-
-      - name: Deploy over FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ${{ vars.FTP_PROTOCOL || 'ftp' }}
-          port: ${{ vars.FTP_PORT || '21' }}
           server-dir: ${{ secrets.FTP_PATH }}
           dangerous-clean-slate: false
           exclude: |
@@ -70,9 +59,15 @@ jobs:
             **/.git*/**
             **/node_modules/**
             **/.github/**
+            **/.claude/**
+            **/.ai/**
+            **/.vscode/**
+            **/.idea/**
+            **/.cursor/**
             **/.env*
             .env*
             **/storage/**
+            **/vendor/**
             **/public/**
             **/tests/**
             **/apidoc/**
