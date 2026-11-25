@@ -29,7 +29,7 @@ return [
     | when delivering an email. You may specify which one you're using for
     | your mailers below. You may also add additional mailers if needed.
     |
-    | Supported: "smtp", "sendmail", "native", "mailgun", "ses", "ses-v2",
+    | Supported: "smtp", "sendmail", "phpmailer", "mailgun", "ses", "ses-v2",
     |            "postmark", "resend", "log", "array",
     |            "failover", "roundrobin"
     |
@@ -70,8 +70,8 @@ return [
             'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),
         ],
 
-        'native' => [
-            'transport' => 'native',
+        'phpmailer' => [
+            'transport' => 'phpmailer',
         ],
 
         'log' => [

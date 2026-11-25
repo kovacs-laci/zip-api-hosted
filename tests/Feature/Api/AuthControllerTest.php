@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Mail\PhpMailerTransport;
 use App\Mail\RegistrationOtpMail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,6 +16,13 @@ class AuthControllerTest extends TestCase
     use RefreshDatabase;
 
     private const PASSWORD = 'StrongPass123!';
+
+    public function test_phpmailer_mailer_uses_phpmailer_transport(): void
+    {
+        $transport = Mail::mailer('phpmailer')->getSymfonyTransport();
+
+        $this->assertInstanceOf(PhpMailerTransport::class, $transport);
+    }
 
     public function test_user_is_created_only_after_the_email_otp_is_verified(): void
     {

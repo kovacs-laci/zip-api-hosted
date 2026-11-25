@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
+use App\Mail\PhpMailerTransport;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
-use Symfony\Component\Mailer\Transport as SymfonyTransport;
 use Symfony\Component\Mailer\Transport\TransportInterface;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,6 +22,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Mail::extend('native', static fn (): TransportInterface => SymfonyTransport::fromDsn('native://default'));
+        Mail::extend('phpmailer', static fn (): TransportInterface => new PhpMailerTransport);
     }
 }
