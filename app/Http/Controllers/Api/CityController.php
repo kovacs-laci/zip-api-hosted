@@ -16,23 +16,38 @@ use Symfony\Component\HttpFoundation\Response;
 class CityController extends Controller
 {
     /**
-     * Display a listing of the resource with pagination.
-     */
-    /**
      * @api {get} /api/cities List cities
-     *
      * @apiName GetCities
-     *
      * @apiGroup Cities
-     *
      * @apiVersion 1.0.0
-     *
-     * @apiDescription Returns a paginated list of cities with their postcodes.
-     * Optionally filters by county ID and city name.
-     *
+     * @apiDescription Returns cities sorted by name, including each city's
+     * county and postcodes. The default page size is 20.
+     * @apiHeader {String} [Accept] Request JSON responses with application/json.
      * @apiQuery {String} [search] Search string for city name.
-     * @apiQuery {Number} [county_id] Filter by county ID.
-     * @apiQuery {Number} [page=1] Page number.
+     * @apiQuery {Number} [county_id] Filter by an existing county ID.
+     * @apiQuery {Number} [page=1] Results page.
+     *
+     * @apiExample {curl} List cities
+     * curl -X GET "https://kovacslaci.hu/zip-api/api/cities?page=1" \
+     *   -H "Accept: application/json"
+     * @apiExample {curl} Search cities
+     * curl -X GET "https://kovacslaci.hu/zip-api/api/cities?search=G%C3%B6d" \
+     *   -H "Accept: application/json"
+     * @apiExample {curl} Cities in a county
+     * curl -X GET "https://kovacslaci.hu/zip-api/api/cities?county_id=13" \
+     *   -H "Accept: application/json"
+     *
+     * @apiHeaderExample {json} Request headers
+     * {
+     *   "Accept": "application/json"
+     * }
+     *
+     * @apiParamExample {json} Query parameters
+     * {
+     *   "search": "Göd",
+     *   "county_id": 13,
+     *   "page": 1
+     * }
      *
      * @apiSuccess {Object[]} data Cities list.
      * @apiSuccess {Number} data.id City ID.
@@ -50,13 +65,6 @@ class CityController extends Controller
      * @apiSuccess {Number} pagination.last_page Last page.
      * @apiSuccess {Number} pagination.per_page Items per page.
      * @apiSuccess {Number} pagination.total Total items.
-     *
-     * @apiExample {curl} All cities
-     * curl -X GET "/api/cities"
-     * @apiExample {curl} Search cities
-     * curl -X GET "/api/cities?search=göd"
-     * @apiExample {curl} Cities in a county
-     * curl -X GET "/api/cities?county_id=13"
      *
      * @apiSuccessExample {json} Search Response
      * {
@@ -86,7 +94,16 @@ class CityController extends Controller
      *   }
      * }
      *
-     * @apiError InternalServerError Fetch failed.
+     * @apiError (422) ValidationError Search must be a string and county_id must refer to an existing county.
+     * @apiError (500) InternalServerError Fetch failed.
+     *
+     * @apiErrorExample {json} Invalid County Filter
+     * {
+     *   "message": "The selected county id is invalid.",
+     *   "errors": {
+     *     "county_id": ["The selected county id is invalid."]
+     *   }
+     * }
      */
     public function index(Request $request): JsonResponse
     {
@@ -144,23 +161,37 @@ class CityController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage using validated request data.
-     */
-    /**
      * @api {post} /api/cities Create city
-     *
      * @apiName CreateCity
-     *
      * @apiGroup Cities
-     *
      * @apiVersion 1.0.0
+     * @apiDescription Creates a city in an existing county. Requires a valid
+     * Sanctum bearer token.
+     * @apiHeader {String} [Accept] Request JSON responses with application/json.
+     * @apiHeader {String} Content-Type Send the request body as application/json.
+     * @apiHeader {String} Authorization Bearer access token (for example: Bearer 1|your-token).
+     * @apiBody {Number} county_id Existing county ID (required).
+     * @apiBody {String} name City name (required).
      *
-     * @apiDescription Creates a new city.
+     * @apiExample {curl} Create city
+     * curl -X POST "https://kovacslaci.hu/zip-api/api/cities" \
+     *   -H "Accept: application/json" \
+     *   -H "Content-Type: application/json" \
+     *   -H "Authorization: Bearer 1|your-token" \
+     *   -d '{"county_id":13,"name":"Göd"}'
      *
-     * @apiHeader {String} Authorization Bearer access token.
+     * @apiHeaderExample {json} Request headers
+     * {
+     *   "Accept": "application/json",
+     *   "Content-Type": "application/json",
+     *   "Authorization": "Bearer 1|your-token"
+     * }
      *
-     * @apiBody {Number} county_id County ID.
-     * @apiBody {String} name City name.
+     * @apiParamExample {json} Request body
+     * {
+     *   "county_id": 13,
+     *   "name": "Göd"
+     * }
      *
      * @apiSuccess (201) {Object} data Created city.
      * @apiSuccess (201) {Number} data.id City ID.
@@ -185,9 +216,17 @@ class CityController extends Controller
      *   "message": "City created successfully."
      * }
      *
-     * @apiError Unauthorized Authentication required.
-     * @apiError ValidationError Invalid request data.
-     * @apiError InternalServerError Creation failed.
+     * @apiError (401) Unauthorized Authentication required or token invalid.
+     * @apiError (422) ValidationError County ID is missing or does not exist, or city name is missing.
+     * @apiError (500) InternalServerError Creation failed.
+     *
+     * @apiErrorExample {json} Validation Error
+     * {
+     *   "message": "The name field is required.",
+     *   "errors": {
+     *     "name": ["The name field is required."]
+     *   }
+     * }
      */
     public function store(CityRequest $request): JsonResponse
     {
@@ -209,21 +248,27 @@ class CityController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     */
-
-    /**
      * @api {get} /api/cities/:id Show city
-     *
      * @apiName ShowCity
-     *
      * @apiGroup Cities
-     *
      * @apiVersion 1.0.0
-     *
-     * @apiDescription Returns a single city.
-     *
+     * @apiDescription Returns one city with its county by numeric ID.
+     * @apiHeader {String} [Accept] Request JSON responses with application/json.
      * @apiParam {Number} id City ID.
+     *
+     * @apiExample {curl} Show city
+     * curl -X GET "https://kovacslaci.hu/zip-api/api/cities/1" \
+     *   -H "Accept: application/json"
+     *
+     * @apiHeaderExample {json} Request headers
+     * {
+     *   "Accept": "application/json"
+     * }
+     *
+     * @apiParamExample {json} Path parameter
+     * {
+     *   "id": 1
+     * }
      *
      * @apiSuccess {Object} data City details.
      * @apiSuccess {Number} data.id City ID.
@@ -246,7 +291,12 @@ class CityController extends Controller
      *   }
      * }
      *
-     * @apiError NotFound City not found.
+     * @apiError (404) NotFound City not found.
+     *
+     * @apiErrorExample {json} Not Found
+     * {
+     *   "message": "City not found."
+     * }
      */
     public function show(string $id): JsonResponse
     {
@@ -260,26 +310,42 @@ class CityController extends Controller
     }
 
     /**
-     * Update the specified resource in storage using validated request data.
-     */
-
-    /**
      * @api {put} /api/cities/:id Update city
-     *
      * @apiName UpdateCity
-     *
      * @apiGroup Cities
-     *
      * @apiVersion 1.0.0
-     *
-     * @apiDescription Updates an existing city.
-     *
-     * @apiHeader {String} Authorization Bearer access token.
-     *
+     * @apiDescription Updates an existing city's name and/or county. Requires
+     * a valid Sanctum bearer token.
+     * @apiHeader {String} [Accept] Request JSON responses with application/json.
+     * @apiHeader {String} Content-Type Send the request body as application/json.
+     * @apiHeader {String} Authorization Bearer access token (for example: Bearer 1|your-token).
      * @apiParam {Number} id City ID.
-     *
      * @apiBody {Number} [county_id] County ID.
      * @apiBody {String} [name] City name.
+     *
+     * @apiExample {curl} Update city
+     * curl -X PUT "https://kovacslaci.hu/zip-api/api/cities/1" \
+     *   -H "Accept: application/json" \
+     *   -H "Content-Type: application/json" \
+     *   -H "Authorization: Bearer 1|your-token" \
+     *   -d '{"county_id":13,"name":"Göd"}'
+     *
+     * @apiHeaderExample {json} Request headers
+     * {
+     *   "Accept": "application/json",
+     *   "Content-Type": "application/json",
+     *   "Authorization": "Bearer 1|your-token"
+     * }
+     *
+     * @apiParamExample {json} Path parameter
+     * {
+     *   "id": 1
+     * }
+     * @apiParamExample {json} Request body
+     * {
+     *   "county_id": 13,
+     *   "name": "Göd"
+     * }
      *
      * @apiSuccess {Object} data Updated city.
      * @apiSuccess {Number} data.id City ID.
@@ -304,10 +370,14 @@ class CityController extends Controller
      *   "message": "City updated successfully."
      * }
      *
-     * @apiError Unauthorized Authentication required.
-     * @apiError ValidationError Invalid request data.
-     * @apiError NotFound City not found.
-     * @apiError InternalServerError Update failed.
+     * @apiError (401) Unauthorized Authentication required or token invalid.
+     * @apiError (404) NotFound City not found.
+     * @apiError (500) InternalServerError Update failed.
+     *
+     * @apiErrorExample {json} Not Found
+     * {
+     *   "message": "City not found."
+     * }
      */
     public function update(CityRequest $request, string $id): JsonResponse
     {
@@ -330,23 +400,31 @@ class CityController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
-     */
-
-    /**
      * @api {delete} /api/cities/:id Delete city
-     *
      * @apiName DeleteCity
-     *
      * @apiGroup Cities
-     *
      * @apiVersion 1.0.0
-     *
-     * @apiDescription Deletes a city.
-     *
-     * @apiHeader {String} Authorization Bearer access token.
-     *
+     * @apiDescription Deletes a city and its postcodes. Requires a valid
+     * Sanctum bearer token.
+     * @apiHeader {String} [Accept] Request JSON responses with application/json.
+     * @apiHeader {String} Authorization Bearer access token (for example: Bearer 1|your-token).
      * @apiParam {Number} id City ID.
+     *
+     * @apiExample {curl} Delete city
+     * curl -X DELETE "https://kovacslaci.hu/zip-api/api/cities/1" \
+     *   -H "Accept: application/json" \
+     *   -H "Authorization: Bearer 1|your-token"
+     *
+     * @apiHeaderExample {json} Request headers
+     * {
+     *   "Accept": "application/json",
+     *   "Authorization": "Bearer 1|your-token"
+     * }
+     *
+     * @apiParamExample {json} Path parameter
+     * {
+     *   "id": 1
+     * }
      *
      * @apiSuccess {String} message Success message.
      *
@@ -355,9 +433,14 @@ class CityController extends Controller
      *   "message": "City deleted successfully."
      * }
      *
-     * @apiError Unauthorized Authentication required.
-     * @apiError NotFound City not found.
-     * @apiError InternalServerError Delete failed.
+     * @apiError (401) Unauthorized Authentication required or token invalid.
+     * @apiError (404) NotFound City not found.
+     * @apiError (500) InternalServerError Delete failed.
+     *
+     * @apiErrorExample {json} Not Found
+     * {
+     *   "message": "City not found."
+     * }
      */
     public function destroy(string $id): JsonResponse
     {

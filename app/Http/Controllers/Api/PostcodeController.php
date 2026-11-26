@@ -17,18 +17,29 @@ class PostcodeController extends Controller
 {
     /**
      * @api {get} /api/postcodes List postcodes
-     *
      * @apiName GetPostcodes
-     *
      * @apiGroup Postcodes
-     *
      * @apiVersion 1.0.0
-     *
-     * @apiDescription Returns a paginated list of postcodes. Optionally filters
-     * results by postcode value using the search query parameter.
-     *
+     * @apiDescription Returns postcodes sorted by postal code, including their
+     * city and county. The default page size is 20.
+     * @apiHeader {String} [Accept] Request JSON responses with application/json.
      * @apiQuery {String} [search] Search string for postcode value.
-     * @apiQuery {Number} [page=1] Page number.
+     * @apiQuery {Number} [page=1] Results page.
+     *
+     * @apiExample {curl} List postcodes
+     * curl -X GET "https://kovacslaci.hu/zip-api/api/postcodes?search=6000&page=1" \
+     *   -H "Accept: application/json"
+     *
+     * @apiHeaderExample {json} Request headers
+     * {
+     *   "Accept": "application/json"
+     * }
+     *
+     * @apiParamExample {json} Query parameters
+     * {
+     *   "search": "6000",
+     *   "page": 1
+     * }
      *
      * @apiSuccess {Object[]} data Postcodes list.
      * @apiSuccess {Number} data.id Postcode record ID.
@@ -47,7 +58,33 @@ class PostcodeController extends Controller
      * @apiSuccess {Number} pagination.per_page Items per page.
      * @apiSuccess {Number} pagination.total Total items.
      *
-     * @apiError InternalServerError Fetch failed.
+     * @apiSuccessExample {json} Success
+     * {
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "city_id": 1,
+     *       "postcode": "6000",
+     *       "city": {
+     *         "id": 1,
+     *         "county_id": 3,
+     *         "name": "Kecskemét",
+     *         "county": {
+     *           "id": 3,
+     *           "name": "Bács-Kiskun"
+     *         }
+     *       }
+     *     }
+     *   ],
+     *   "pagination": {
+     *     "current_page": 1,
+     *     "last_page": 1,
+     *     "per_page": 20,
+     *     "total": 1
+     *   }
+     * }
+     *
+     * @apiError (500) InternalServerError Fetch failed.
      */
     public function index(Request $request): JsonResponse
     {
@@ -86,19 +123,36 @@ class PostcodeController extends Controller
 
     /**
      * @api {post} /api/postcodes Create postcode
-     *
      * @apiName CreatePostcode
-     *
      * @apiGroup Postcodes
-     *
      * @apiVersion 1.0.0
+     * @apiDescription Creates a postcode for an existing city. Requires a
+     * valid Sanctum bearer token.
+     * @apiHeader {String} [Accept] Request JSON responses with application/json.
+     * @apiHeader {String} Content-Type Send the request body as application/json.
+     * @apiHeader {String} Authorization Bearer access token (for example: Bearer 1|your-token).
+     * @apiBody {Number} city_id Existing city ID (required).
+     * @apiBody {String} postcode Postcode value (required, maximum 4 characters).
      *
-     * @apiDescription Creates a postcode. Authentication is required.
+     * @apiExample {curl} Create postcode
+     * curl -X POST "https://kovacslaci.hu/zip-api/api/postcodes" \
+     *   -H "Accept: application/json" \
+     *   -H "Content-Type: application/json" \
+     *   -H "Authorization: Bearer 1|your-token" \
+     *   -d '{"city_id":1,"postcode":"6000"}'
      *
-     * @apiHeader {String} Authorization Bearer access token.
+     * @apiHeaderExample {json} Request headers
+     * {
+     *   "Accept": "application/json",
+     *   "Content-Type": "application/json",
+     *   "Authorization": "Bearer 1|your-token"
+     * }
      *
-     * @apiBody {Number} city_id City ID.
-     * @apiBody {String} postcode Postcode value (maximum 4 characters).
+     * @apiParamExample {json} Request body
+     * {
+     *   "city_id": 1,
+     *   "postcode": "6000"
+     * }
      *
      * @apiSuccess (201) {Object} data Created postcode.
      * @apiSuccess (201) {Number} data.id Postcode record ID.
@@ -113,9 +167,36 @@ class PostcodeController extends Controller
      * @apiSuccess (201) {String} data.city.county.name County name.
      * @apiSuccess (201) {String} message Success message.
      *
-     * @apiError Unauthorized Authentication required.
-     * @apiError ValidationError Invalid request data.
-     * @apiError InternalServerError Creation failed.
+     * @apiSuccessExample {json} Created
+     * {
+     *   "data": {
+     *     "id": 1,
+     *     "city_id": 1,
+     *     "postcode": "6000",
+     *     "city": {
+     *       "id": 1,
+     *       "county_id": 3,
+     *       "name": "Kecskemét",
+     *       "county": {
+     *         "id": 3,
+     *         "name": "Bács-Kiskun"
+     *       }
+     *     }
+     *   },
+     *   "message": "Postcode created successfully."
+     * }
+     *
+     * @apiError (401) Unauthorized Authentication required or token invalid.
+     * @apiError (422) ValidationError City ID is missing or invalid, or postcode is missing or longer than four characters.
+     * @apiError (500) InternalServerError Creation failed.
+     *
+     * @apiErrorExample {json} Validation Error
+     * {
+     *   "message": "The postcode field is required.",
+     *   "errors": {
+     *     "postcode": ["The postcode field is required."]
+     *   }
+     * }
      */
     public function store(PostcodeRequest $request): JsonResponse
     {
@@ -138,16 +219,26 @@ class PostcodeController extends Controller
 
     /**
      * @api {get} /api/postcodes/:id Show postcode
-     *
      * @apiName ShowPostcode
-     *
      * @apiGroup Postcodes
-     *
      * @apiVersion 1.0.0
-     *
-     * @apiDescription Returns a single postcode.
-     *
+     * @apiDescription Returns one postcode with its city and county by numeric ID.
+     * @apiHeader {String} [Accept] Request JSON responses with application/json.
      * @apiParam {Number} id Postcode record ID.
+     *
+     * @apiExample {curl} Show postcode
+     * curl -X GET "https://kovacslaci.hu/zip-api/api/postcodes/1" \
+     *   -H "Accept: application/json"
+     *
+     * @apiHeaderExample {json} Request headers
+     * {
+     *   "Accept": "application/json"
+     * }
+     *
+     * @apiParamExample {json} Path parameter
+     * {
+     *   "id": 1
+     * }
      *
      * @apiSuccess {Object} data Postcode details.
      * @apiSuccess {Number} data.id Postcode record ID.
@@ -161,7 +252,30 @@ class PostcodeController extends Controller
      * @apiSuccess {Number} data.city.county.id County ID.
      * @apiSuccess {String} data.city.county.name County name.
      *
-     * @apiError NotFound Postcode not found.
+     * @apiSuccessExample {json} Success
+     * {
+     *   "data": {
+     *     "id": 1,
+     *     "city_id": 1,
+     *     "postcode": "6000",
+     *     "city": {
+     *       "id": 1,
+     *       "county_id": 3,
+     *       "name": "Kecskemét",
+     *       "county": {
+     *         "id": 3,
+     *         "name": "Bács-Kiskun"
+     *       }
+     *     }
+     *   }
+     * }
+     *
+     * @apiError (404) NotFound Postcode not found.
+     *
+     * @apiErrorExample {json} Not Found
+     * {
+     *   "message": "Postcode not found."
+     * }
      */
     public function show(string $id): JsonResponse
     {
@@ -176,21 +290,40 @@ class PostcodeController extends Controller
 
     /**
      * @api {put} /api/postcodes/:id Update postcode
-     *
      * @apiName UpdatePostcode
-     *
      * @apiGroup Postcodes
-     *
      * @apiVersion 1.0.0
-     *
-     * @apiDescription Updates a postcode. Authentication is required.
-     *
-     * @apiHeader {String} Authorization Bearer access token.
-     *
+     * @apiDescription Updates a postcode and/or its city. Requires a valid
+     * Sanctum bearer token.
+     * @apiHeader {String} [Accept] Request JSON responses with application/json.
+     * @apiHeader {String} Content-Type Send the request body as application/json.
+     * @apiHeader {String} Authorization Bearer access token (for example: Bearer 1|your-token).
      * @apiParam {Number} id Postcode record ID.
-     *
-     * @apiBody {Number} [city_id] City ID.
+     * @apiBody {Number} [city_id] Existing city ID.
      * @apiBody {String} [postcode] Postcode value (maximum 4 characters).
+     *
+     * @apiExample {curl} Update postcode
+     * curl -X PUT "https://kovacslaci.hu/zip-api/api/postcodes/1" \
+     *   -H "Accept: application/json" \
+     *   -H "Content-Type: application/json" \
+     *   -H "Authorization: Bearer 1|your-token" \
+     *   -d '{"postcode":"6001"}'
+     *
+     * @apiHeaderExample {json} Request headers
+     * {
+     *   "Accept": "application/json",
+     *   "Content-Type": "application/json",
+     *   "Authorization": "Bearer 1|your-token"
+     * }
+     *
+     * @apiParamExample {json} Path parameter
+     * {
+     *   "id": 1
+     * }
+     * @apiParamExample {json} Request body
+     * {
+     *   "postcode": "6001"
+     * }
      *
      * @apiSuccess {Object} data Updated postcode.
      * @apiSuccess {Number} data.id Postcode record ID.
@@ -205,10 +338,37 @@ class PostcodeController extends Controller
      * @apiSuccess {String} data.city.county.name County name.
      * @apiSuccess {String} message Success message.
      *
-     * @apiError Unauthorized Authentication required.
-     * @apiError NotFound Postcode not found.
-     * @apiError ValidationError Invalid request data.
-     * @apiError InternalServerError Update failed.
+     * @apiSuccessExample {json} Success
+     * {
+     *   "data": {
+     *     "id": 1,
+     *     "city_id": 1,
+     *     "postcode": "6001",
+     *     "city": {
+     *       "id": 1,
+     *       "county_id": 3,
+     *       "name": "Kecskemét",
+     *       "county": {
+     *         "id": 3,
+     *         "name": "Bács-Kiskun"
+     *       }
+     *     }
+     *   },
+     *   "message": "Postcode updated successfully."
+     * }
+     *
+     * @apiError (401) Unauthorized Authentication required or token invalid.
+     * @apiError (404) NotFound Postcode not found.
+     * @apiError (422) ValidationError Supplied city ID is invalid or postcode exceeds four characters.
+     * @apiError (500) InternalServerError Update failed.
+     *
+     * @apiErrorExample {json} Validation Error
+     * {
+     *   "message": "The postcode field must not be greater than 4 characters.",
+     *   "errors": {
+     *     "postcode": ["The postcode field must not be greater than 4 characters."]
+     *   }
+     * }
      */
     public function update(PostcodeRequest $request, string $id): JsonResponse
     {
@@ -232,24 +392,45 @@ class PostcodeController extends Controller
 
     /**
      * @api {delete} /api/postcodes/:id Delete postcode
-     *
      * @apiName DeletePostcode
-     *
      * @apiGroup Postcodes
-     *
      * @apiVersion 1.0.0
-     *
-     * @apiDescription Deletes a postcode. Authentication is required.
-     *
-     * @apiHeader {String} Authorization Bearer access token.
-     *
+     * @apiDescription Deletes a postcode. Requires a valid Sanctum bearer token.
+     * @apiHeader {String} [Accept] Request JSON responses with application/json.
+     * @apiHeader {String} Authorization Bearer access token (for example: Bearer 1|your-token).
      * @apiParam {Number} id Postcode record ID.
+     *
+     * @apiExample {curl} Delete postcode
+     * curl -X DELETE "https://kovacslaci.hu/zip-api/api/postcodes/1" \
+     *   -H "Accept: application/json" \
+     *   -H "Authorization: Bearer 1|your-token"
+     *
+     * @apiHeaderExample {json} Request headers
+     * {
+     *   "Accept": "application/json",
+     *   "Authorization": "Bearer 1|your-token"
+     * }
+     *
+     * @apiParamExample {json} Path parameter
+     * {
+     *   "id": 1
+     * }
      *
      * @apiSuccess {String} message Success message.
      *
-     * @apiError Unauthorized Authentication required.
-     * @apiError NotFound Postcode not found.
-     * @apiError InternalServerError Delete failed.
+     * @apiSuccessExample {json} Success
+     * {
+     *   "message": "Postcode deleted successfully."
+     * }
+     *
+     * @apiError (401) Unauthorized Authentication required or token invalid.
+     * @apiError (404) NotFound Postcode not found.
+     * @apiError (500) InternalServerError Delete failed.
+     *
+     * @apiErrorExample {json} Not Found
+     * {
+     *   "message": "Postcode not found."
+     * }
      */
     public function destroy(string $id): JsonResponse
     {

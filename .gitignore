@@ -19,6 +19,9 @@ CLAUDE.md
 /.zed
 /auth.json
 /node_modules
+/apidoc/
+/assets/
+/index.html
 /public/
 /storage/*.key
 /storage/pail

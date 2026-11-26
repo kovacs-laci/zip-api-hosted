@@ -56,6 +56,14 @@ jobs:
           extensions: mbstring, pdo_mysql
           coverage: none
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate API documentation
+        run: npx --yes apidoc@1.2.0 -i app/Http/Controllers routes -o .
+
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -79,7 +87,6 @@ jobs:
             **/storage/**
             **/public/**
             **/tests/**
-            **/apidoc/**
             index.php
             .htaccess
             favicon.ico
