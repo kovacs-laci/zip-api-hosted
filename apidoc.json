@@ -1,9 +1,12 @@
 {
-  "name": "zip-api",
+  "name": "Zip API",
   "version": "1.0.0",
-  "description": "API for Hungarian counties, cities, and postcodes.",
-  "title": "ZIP API Documentation",
+  "header": {
+    "title": "Introduction",
+    "filename": "apidoc-header.md"
+  },
   "order": [
+    "Authentication",
     "Counties",
     "Cities",
     "Postcodes"
