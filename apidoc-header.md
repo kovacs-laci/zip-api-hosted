@@ -16,3 +16,5 @@ This service is intended for students, beginner developers, and anyone who would
 Read-only endpoints are publicly accessible and do not require authentication. However, endpoints that create, update, or delete resources require authentication and are intended to demonstrate common authorization workflows used in real-world REST APIs.
 
 The API is publicly available and designed specifically for learning, experimentation, and testing, providing realistic data and scenarios for REST API client development.
+
+To preserve data integrity, Core data cannot be modified or deleted. Users may only modify data added by themselves or by other users.
