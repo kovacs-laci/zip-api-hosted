@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int|null $created_by
+ * @property int|null $updated_by
+ */
 class Postcode extends EloquentModel
 {
     use HasFactory;
@@ -13,8 +17,6 @@ class Postcode extends EloquentModel
     protected $table = 'postcodes';
 
     protected $fillable = ['city_id', 'postcode'];
-
-    public $timestamps = false;
 
     public function city(): BelongsTo
     {

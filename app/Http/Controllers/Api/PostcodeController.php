@@ -203,7 +203,11 @@ class PostcodeController extends Controller
         $validatedData = $request->validated();
 
         try {
-            $postcode = Postcode::create($validatedData);
+            $userId = $request->user()->getAuthIdentifier();
+            $postcode = new Postcode($validatedData);
+            $postcode->created_by = $userId;
+            $postcode->updated_by = $userId;
+            $postcode->save();
             $postcode->load('city.county');
 
             return response()->json([
@@ -359,6 +363,7 @@ class PostcodeController extends Controller
      *
      * @apiError (401) Unauthorized Authentication required or token invalid.
      * @apiError (404) NotFound Postcode not found.
+     * @apiError (403) Forbidden Core data cannot be modified.
      * @apiError (422) ValidationError Supplied city ID is invalid or postcode exceeds four characters.
      * @apiError (500) InternalServerError Update failed.
      *
@@ -373,10 +378,14 @@ class PostcodeController extends Controller
     public function update(PostcodeRequest $request, string $id): JsonResponse
     {
         $postcode = Postcode::findOrFail($id);
+        abort_if($postcode->created_by === null, Response::HTTP_FORBIDDEN, __('skeletons.core_data_protected'));
+
         $validatedData = $request->validated();
 
         try {
-            $postcode->update($validatedData);
+            $postcode->fill($validatedData);
+            $postcode->updated_by = $request->user()->getAuthIdentifier();
+            $postcode->save();
             $postcode->load('city.county');
 
             return response()->json([
@@ -425,6 +434,7 @@ class PostcodeController extends Controller
      *
      * @apiError (401) Unauthorized Authentication required or token invalid.
      * @apiError (404) NotFound Postcode not found.
+     * @apiError (403) Forbidden Core data cannot be deleted.
      * @apiError (500) InternalServerError Delete failed.
      *
      * @apiErrorExample {json} Not Found
@@ -437,6 +447,8 @@ class PostcodeController extends Controller
         $postcode = Postcode::find($id);
 
         if ($postcode) {
+            abort_if($postcode->created_by === null, Response::HTTP_FORBIDDEN, __('skeletons.core_data_protected'));
+
             try {
                 $postcode->delete();
 

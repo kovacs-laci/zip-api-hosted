@@ -24,4 +24,5 @@ return [
     'select' => '-- Válassz --',
     'all_rights_reserved' => 'Minden jog fenntartva.',
     'search_column_missing' => 'The search column ":column" does not exist in the table.',
+    'core_data_protected' => 'Ez a rekord vagy a hozzá kapcsolódó alapadat védett.',
 ];

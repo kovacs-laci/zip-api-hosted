@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CountyRequest;
 use App\Models\County;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -166,7 +167,11 @@ class CountyController extends Controller
         $validatedData = $request->validated();
 
         try {
-            $county = County::create($validatedData);
+            $userId = $request->user()->getAuthIdentifier();
+            $county = new County($validatedData);
+            $county->created_by = $userId;
+            $county->updated_by = $userId;
+            $county->save();
 
             return response()->json([
                 'data' => $county,
@@ -283,6 +288,7 @@ class CountyController extends Controller
      *
      * @apiError (401) Unauthorized Authentication required or token invalid.
      * @apiError (404) NotFound County not found.
+     * @apiError (403) Forbidden Core data cannot be modified.
      * @apiError (500) InternalServerError Update failed.
      *
      * @apiErrorExample {json} Not Found
@@ -293,10 +299,14 @@ class CountyController extends Controller
     public function update(CountyRequest $request, string $id): JsonResponse
     {
         $county = County::findOrFail($id);
+        abort_if($county->created_by === null, Response::HTTP_FORBIDDEN, __('skeletons.core_data_protected'));
+
         $validatedData = $request->validated();
 
         try {
-            $county->update($validatedData);
+            $county->fill($validatedData);
+            $county->updated_by = $request->user()->getAuthIdentifier();
+            $county->save();
 
             return response()->json([
                 'data' => $county,
@@ -345,6 +355,7 @@ class CountyController extends Controller
      *
      * @apiError (401) Unauthorized Authentication required or token invalid.
      * @apiError (404) NotFound County not found.
+     * @apiError (403) Forbidden Core data or related core cities/postcodes cannot be deleted.
      * @apiError (500) InternalServerError Delete failed.
      *
      * @apiErrorExample {json} Not Found
@@ -357,6 +368,16 @@ class CountyController extends Controller
         $county = County::find($id);
 
         if ($county) {
+            $hasCoreCities = $county->cities()->whereNull('created_by')->exists();
+            $hasCorePostcodes = $county->cities()
+                ->whereHas('postcodes', fn (Builder $query): Builder => $query->whereNull('created_by'))
+                ->exists();
+            abort_if(
+                $county->created_by === null || $hasCoreCities || $hasCorePostcodes,
+                Response::HTTP_FORBIDDEN,
+                __('skeletons.core_data_protected')
+            );
+
             try {
                 $county->delete();
 

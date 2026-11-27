@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 
+/**
+ * @property int|null $created_by
+ * @property int|null $updated_by
+ */
 class County extends EloquentModel
 {
     use HasFactory;
@@ -12,8 +16,6 @@ class County extends EloquentModel
     protected $table = 'counties';
 
     protected $fillable = ['name'];
-
-    public $timestamps = false;
 
 
     public function cities()

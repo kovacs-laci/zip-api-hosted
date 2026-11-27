@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int|null $created_by
+ * @property int|null $updated_by
+ */
 class City extends EloquentModel
 {
     use HasFactory;
@@ -14,8 +18,6 @@ class City extends EloquentModel
     protected $table = 'cities';
 
     protected $fillable = ['county_id', 'name'];
-
-    public $timestamps = false;
 
     public function county(): BelongsTo
     {

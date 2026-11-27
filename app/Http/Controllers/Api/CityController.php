@@ -233,7 +233,11 @@ class CityController extends Controller
         $validatedData = $request->validated();
 
         try {
-            $city = City::create($validatedData);
+            $userId = $request->user()->getAuthIdentifier();
+            $city = new City($validatedData);
+            $city->created_by = $userId;
+            $city->updated_by = $userId;
+            $city->save();
             $city->load('county');
 
             return response()->json([
@@ -372,6 +376,7 @@ class CityController extends Controller
      *
      * @apiError (401) Unauthorized Authentication required or token invalid.
      * @apiError (404) NotFound City not found.
+     * @apiError (403) Forbidden Core data cannot be modified.
      * @apiError (500) InternalServerError Update failed.
      *
      * @apiErrorExample {json} Not Found
@@ -382,10 +387,14 @@ class CityController extends Controller
     public function update(CityRequest $request, string $id): JsonResponse
     {
         $city = City::findOrFail($id);
+        abort_if($city->created_by === null, Response::HTTP_FORBIDDEN, __('skeletons.core_data_protected'));
+
         $validatedData = $request->validated();
 
         try {
-            $city->update($validatedData);
+            $city->fill($validatedData);
+            $city->updated_by = $request->user()->getAuthIdentifier();
+            $city->save();
             $city->load('county');
 
             return response()->json([
@@ -435,6 +444,7 @@ class CityController extends Controller
      *
      * @apiError (401) Unauthorized Authentication required or token invalid.
      * @apiError (404) NotFound City not found.
+     * @apiError (403) Forbidden Core data or related core postcodes cannot be deleted.
      * @apiError (500) InternalServerError Delete failed.
      *
      * @apiErrorExample {json} Not Found
@@ -447,6 +457,13 @@ class CityController extends Controller
         $city = City::find($id);
 
         if ($city) {
+            $hasCorePostcodes = $city->postcodes()->whereNull('created_by')->exists();
+            abort_if(
+                $city->created_by === null || $hasCorePostcodes,
+                Response::HTTP_FORBIDDEN,
+                __('skeletons.core_data_protected')
+            );
+
             try {
                 $city->delete();
 

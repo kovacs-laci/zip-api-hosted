@@ -31,6 +31,7 @@ return [
     'created_successfully' => ':model created successfully.',
     'updated_successfully' => ':model updated successfully.',
     'deleted_successfully' => ':model deleted successfully.',
+    'core_data_protected' => 'This record or its related core data is protected.',
     'model_not_found' => ':model not found.',
     'search_failed' => 'Search failed.',
 ];
